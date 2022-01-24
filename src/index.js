@@ -16,56 +16,54 @@ const defaultOptions = {
  * @param filePath - Relative component file path
  */
 const inject = (content, docs, injectAt, filePath) => {
-	const project = new tsmorph.Project({ useInMemoryFileSystem: true });
+	const project = new tsmorph.Project({
+		useInMemoryFileSystem: true
+	});
 	const sourceFile = project.createSourceFile('./tmp.tsx', content);
 	const exportedDeclarations = sourceFile.getExportedDeclarations();
-
-	exportedDeclarations.forEach((exported) => {
-		defaultExport = exported.find((node) => {
-			try {
-				if (node.getKind() === tsmorph.SyntaxKind.VariableDeclaration && node.isDefaultExport()) {
-					const name = node.getName();
-
-					sourceFile.addStatements(`
-						if (typeof STORYBOOK_REACT_CLASSES !== "undefined") {\n
-							STORYBOOK_REACT_CLASSES["${filePath}"] = {\n
-								name: "${name}",\n
-								docgenInfo: ${name}.${injectAt},\n
-								path: "${filePath}"\n
-							}
-						}
-						${name}.${defaultOptions.injectAt} = ${JSON.stringify(docs[filePath])}
-					`);
+	let defaultExport;
+	exportedDeclarations.forEach(exported => {
+		defaultExport = exported.find(node => {
+			if (node.getKind() === tsmorph.SyntaxKind.VariableDeclaration) {
+				if (node.isDefaultExport()) {
+					return true
 				}
-			} catch (e) {
-				console.log(e);
-				return false;
 			}
 		});
 	});
+
+	if (defaultExport) {
+		const name = defaultExport.getName();
+		sourceFile.addStatements(`
+			if (typeof STORYBOOK_REACT_CLASSES !== "undefined") {\n
+				STORYBOOK_REACT_CLASSES["${filePath}"] = {\n
+					name: "${name}",\n
+					docgenInfo: ${name}.${injectAt},\n
+					path: "${filePath}"\n
+				}
+			}
+			${name}.${defaultOptions.injectAt} = ${JSON.stringify(docs[filePath])}
+		`);
+	}
 
 	return sourceFile.print();
 };
 
 module.exports = async function (content, map) {
 	const callback = this.async();
+	const filePath = path.relative(this.rootContext, this.resourcePath);
 
 	try {
-		const options = {
-			...defaultOptions
-		}
-
+		const options = { ...defaultOptions };
 		const docs = docgen.default(this.resourcePath, null, false);
-		const filePath = path.relative(this.rootContext, this.resourcePath);
 
-	  callback(null, inject(content, docs, options.injectAt, filePath), map);
+		callback(null, inject(content, docs, options.injectAt, filePath), map);
 	} catch (e) {
 		if (e instanceof Error) {
-			e.message = `[react-tsdoc-loader] failed to parse the component file. ${e.message}`;
+			e.message = `[react-tsdoc-loader] failed to parse the component file ${filePath} - ${e.message}`;
 		}
 
 		console.log(e);
-
 		this.emitWarning(e);
 		callback(null, content, map);
 	}
