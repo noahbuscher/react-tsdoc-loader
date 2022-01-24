@@ -47,7 +47,6 @@ const inject = (content, docs, injectAt, filePath) => {
 	return sourceFile.print();
 };
 
-
 module.exports = async function (content, map) {
 	const callback = this.async();
 
