@@ -26,6 +26,7 @@ module.exports = {
       test: /\.tsx$/,
       use: ['react-tsdoc-loader'],
       include: path.resolve(__dirname, '../'),
+      enforce: 'post'
     });
     
     return config;
