@@ -1,6 +1,6 @@
 {
   "name": "react-tsdoc-loader",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Webpack loader to inject __docgenInfo from react-tsdoc for Storybook",
   "keywords": [
     "react",
